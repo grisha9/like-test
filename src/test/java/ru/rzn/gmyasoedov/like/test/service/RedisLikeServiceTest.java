@@ -1,15 +1,14 @@
 package ru.rzn.gmyasoedov.like.test.service;
 
-
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -17,13 +16,22 @@ import java.util.stream.IntStream;
 
 import static ru.rzn.gmyasoedov.like.test.service.RedisLikeService.LIKE_PLAYER_PREFIX;
 
-@Testcontainers
 @SpringBootTest
 class RedisLikeServiceTest {
 
-    @Container
-    private GenericContainer redis = new FixedHostPortGenericContainer("redis:5.0.3-alpine")
+    private static GenericContainer redis = new FixedHostPortGenericContainer("redis:5.0.3-alpine")
             .withFixedExposedPort(6379, 6379);
+
+    @BeforeAll
+    private static void setUpAll() {
+        redis.start();
+    }
+
+    @AfterAll
+    private static void destroyAll() {
+        redis.stop();
+    }
+
 
     @Autowired
     private LikeService likeService;
@@ -75,7 +83,7 @@ class RedisLikeServiceTest {
 
     @Test
     void likeConcurrentWrite() throws InterruptedException {
-        String player = "player1";
+        String player = "playerConcurrent";
         long singleThreadRequestCount = 10_000L;
         int threadCount = 100;
         Runnable action = () -> {
@@ -88,15 +96,19 @@ class RedisLikeServiceTest {
                 .mapToObj(i -> new Thread(action))
                 .collect(Collectors.toList());
 
-        for (Thread thread : threads) {
-            thread.start();
-        }
-        for (Thread thread : threads) {
-            thread.join();
-        }
+        threads.forEach(Thread::start);
+        threads.forEach(this::join);
 
         long likes = likeService.getLikes(player);
         Assertions.assertEquals(threadCount * singleThreadRequestCount, likes);
+    }
+
+    private void join(Thread t) {
+        try {
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 }
