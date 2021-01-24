@@ -22,6 +22,11 @@ class RedisLikeServiceTest {
     private static GenericContainer redis = new FixedHostPortGenericContainer("redis:5.0.3-alpine")
             .withFixedExposedPort(6379, 6379);
 
+    @Autowired
+    private LikeService likeService;
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+
     @BeforeAll
     private static void setUpAll() {
         redis.start();
@@ -31,12 +36,6 @@ class RedisLikeServiceTest {
     private static void destroyAll() {
         redis.stop();
     }
-
-
-    @Autowired
-    private LikeService likeService;
-    @Autowired
-    private StringRedisTemplate stringRedisTemplate;
 
     @Test
     void getLikeNullArg() {
