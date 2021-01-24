@@ -81,7 +81,7 @@ class RedisLikeServiceTest {
     }
 
     @Test
-    void likeConcurrentWrite() throws InterruptedException {
+    void likeConcurrentWrite() {
         String player = "playerConcurrent";
         long singleThreadRequestCount = 10_000L;
         int threadCount = 100;
